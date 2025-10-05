@@ -97,15 +97,36 @@ class WeatherService:
             "average_wind_speed": round(final_prob.get('average_wind_speed', 0), 1)
         }
 
+        # Compose summary text (simple example, can be improved)
+        summary_text = (
+            f"On {start_date} at {location}, expected rain probability is {formatted_probs['rain']}%, "
+            f"cloudy: {formatted_probs['cloudy']}%, sunny: {formatted_probs['sunny']}%. "
+            f"Humidity: {formatted_probs['average_humidity']}%, wind: {formatted_probs['average_wind_speed']} km/h."
+        )
+        # Confidence level (simple logic: more years = higher confidence)
+        confidence_level = "high" if len(historical_dfs) >= 4 else ("medium" if len(historical_dfs) >= 2 else "low")
+        # Compose summary dict for API
+        summary = dict(formatted_probs)
+        # Hourly probabilities (convert to required schema)
+        hourly_probabilities = []
+        if not hourly_probs.empty:
+            for row in hourly_probs.itertuples(index=False):
+                hourly_probabilities.append({
+                    "hour": getattr(row, "hour", 0),
+                    "rain_prob": getattr(row, "rain_prob", 0.0),
+                    "cloudy_prob": getattr(row, "cloudy_prob", 0.0),
+                    "sunny_prob": getattr(row, "sunny_prob", 0.0),
+                    "high_wind_prob": getattr(row, "high_wind_prob", 0.0),
+                })
         return {
-            "place": location,
-            "date": start_date,
+            "location": location,
             "coordinates": {"latitude": lat, "longitude": lon},
-            "temperature": temp_stats,
-            "probabilities": formatted_probs,
-            "hourly_breakdown": hourly_probs.to_dict('records') if not hourly_probs.empty else [],
+            "date": start_date,
+            "summary": summary,
+            "hourly_probabilities": hourly_probabilities,
+            "confidence_level": confidence_level,
+            "summary_text": summary_text,
             "chart_base64": chart_base64,
-            "raw_historical_count": len(historical_dfs)
         }
 
     async def get_coordinates(self, location: str) -> Dict[str, float]:

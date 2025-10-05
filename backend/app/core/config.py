@@ -18,7 +18,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    # Allow all origins and explicitly add Codespaces backend URL
+    ALLOWED_ORIGINS: List[str] = [
+        "*",
+        "https://shiny-waffle-pjqpg7v9p5vgf9rwj-8000.app.github.dev"
+    ]
     
     # App Settings
     HISTORICAL_YEARS: int = 5
