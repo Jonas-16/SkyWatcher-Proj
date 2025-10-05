@@ -1,4 +1,5 @@
 import { useState } from "react";
+import api from "@/api/api";
 import { Sparkles, MapPin, Calendar, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,35 +32,46 @@ const Recommender = () => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const handleGetRecommendations = () => {
+  const mockRecommendations: Recommendation[] = [
+    {
+      location: "San Diego, CA",
+      score: 95,
+      dateRange: "May 15-22, 2025",
+      conditions: ["Sunny", "Warm", "Low Wind"],
+      reason: "Perfect beach weather with minimal rainfall probability",
+    },
+    {
+      location: "Portland, OR",
+      score: 88,
+      dateRange: "July 10-17, 2025",
+      conditions: ["Mild", "Clear", "Low Humidity"],
+      reason: "Ideal hiking conditions with comfortable temperatures",
+    },
+    {
+      location: "Austin, TX",
+      score: 82,
+      dateRange: "March 20-27, 2025",
+      conditions: ["Warm", "Partly Cloudy", "Low Precipitation"],
+      reason: "Spring weather with pleasant outdoor conditions",
+    },
+  ];
+
+  const handleGetRecommendations = async () => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setRecommendations([
-        {
-          location: "San Diego, CA",
-          score: 95,
-          dateRange: "May 15-22, 2025",
-          conditions: ["Sunny", "Warm", "Low Wind"],
-          reason: "Perfect beach weather with minimal rainfall probability",
-        },
-        {
-          location: "Portland, OR",
-          score: 88,
-          dateRange: "July 10-17, 2025",
-          conditions: ["Mild", "Clear", "Low Humidity"],
-          reason: "Ideal hiking conditions with comfortable temperatures",
-        },
-        {
-          location: "Austin, TX",
-          score: 82,
-          dateRange: "March 20-27, 2025",
-          conditions: ["Warm", "Partly Cloudy", "Low Precipitation"],
-          reason: "Spring weather with pleasant outdoor conditions",
-        },
-      ]);
+    try {
+      const payload = {
+        activity: preferences.activity,
+        month: preferences.month,
+        region: preferences.region,
+      };
+      const recs = await api.getRecommendations(payload);
+      setRecommendations(recs);
+    } catch (err) {
+      // fallback to mock data
+      setRecommendations(mockRecommendations);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -175,7 +187,26 @@ const Recommender = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button className="flex-1">
+                  <Button
+                    className="flex-1"
+                    onClick={async () => {
+                      setLoading(true);
+                      try {
+                        await api.createTrip({
+                          name: rec.location + " Trip",
+                          location: rec.location,
+                          startDate: rec.dateRange.split("-")[0].trim(),
+                          endDate: rec.dateRange.split("-")[1]?.replace(/, \d{4}/, "").trim() || rec.dateRange.split("-")[0].trim(),
+                        });
+                        alert("Trip created!");
+                      } catch (err) {
+                        alert("Failed to create trip");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                  >
                     <ThumbsUp className="mr-2 h-4 w-4" />
                     Create Trip
                   </Button>

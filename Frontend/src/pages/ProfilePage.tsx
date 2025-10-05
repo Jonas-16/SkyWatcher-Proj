@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchProfile } from "@/lib/api";
+import api from "@/api/api";
 
 export default function ProfilePage() {
   const { data, error, isLoading } = useQuery({
     queryKey: ["profile"],
-    queryFn: fetchProfile,
+    queryFn: api.getProfile,
   });
 
   if (isLoading) return <div>Loading...</div>;

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import api from "@/api/api";
 import { FileText, Download, Calendar, MapPin, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,44 +24,37 @@ interface Report {
 
 const Reports = () => {
   const [filterType, setFilterType] = useState("all");
-  const [reports] = useState<Report[]>([
-    {
-      id: "1",
-      title: "Summer Beach Analysis",
-      location: "Miami, FL",
-      date: "2025-07-15",
-      type: "Historical Analysis",
-      weatherScore: 85,
-      status: "completed",
-    },
-    {
-      id: "2",
-      title: "Mountain Hiking Forecast",
-      location: "Denver, CO",
-      date: "2025-08-10",
-      type: "Probability Report",
-      weatherScore: 72,
-      status: "completed",
-    },
-    {
-      id: "3",
-      title: "Winter Skiing Conditions",
-      location: "Aspen, CO",
-      date: "2025-12-20",
-      type: "Seasonal Trends",
-      weatherScore: 91,
-      status: "pending",
-    },
-    {
-      id: "4",
-      title: "Spring City Tour",
-      location: "Portland, OR",
-      date: "2025-04-15",
-      type: "Historical Analysis",
-      weatherScore: 78,
-      status: "completed",
-    },
-  ]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    api.getReports()
+      .then(setReports)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleDownloadCSV = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const blob = await api.exportCsv();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "weather_reports.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -89,11 +83,14 @@ const Reports = () => {
             View and manage your historical weather analyses
           </p>
         </div>
-        <Button>
-          <FileText className="mr-2 h-4 w-4" />
-          New Report
+        <Button onClick={handleDownloadCSV} disabled={loading}>
+          <Download className="mr-2 h-4 w-4" />
+          Export CSV
         </Button>
       </div>
+
+      {loading && <div>Loading...</div>}
+      {error && <div className="text-red-500">{error}</div>}
 
       <Card className="p-4">
         <div className="flex items-center gap-4">
